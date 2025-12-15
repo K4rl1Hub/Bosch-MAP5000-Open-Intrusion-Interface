@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+
 import json
 import voluptuous as vol
 from homeassistant import config_entries
@@ -20,7 +21,7 @@ DEFAULT_INPUT_MAPPING_JSON = json.dumps({
   "default": {"device_class": "problem", "state_property": "state", "true_values": ["ALARM", "ON", True], "false_values": ["NORMAL", "OFF", False]},
 }, ensure_ascii=False)
 
-DEFAULT_OUTPUT_MAPPING_JSON = json.dumps{
+DEFAULT_OUTPUT_MAPPING_JSON = json.dumps({
   "OUTPUT.SIREN":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
   "OUTPUT.STROBE":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
   "OUTPUT.LED":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
