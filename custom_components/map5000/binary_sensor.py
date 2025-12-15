@@ -23,8 +23,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class MapBinarySensor(BinarySensorEntity):
     def __init__(self, coord: OIICoordinator, reg: MapRegistry, dev: DeviceEntry):
-        self._coord=coord; self._reg=reg; self._dev=dev
-        self._is_on=None; self._attrs={}
+        self._coord=coord; 
+        self._reg=reg; 
+        self._dev=dev
+        self._is_on=None; 
+        self._attrs={}
         self._attr_unique_id=f"{DOMAIN}_{dev.siid}"
         self._attr_name=dev.name or dev.siid
         self._device_info = DeviceInfo(identifiers={(DOMAIN, "map5000")}, manufacturer="Bosch", model="MAP5000", name="MAP5000")
@@ -41,7 +44,7 @@ class MapBinarySensor(BinarySensorEntity):
                 self._attr_device_class = mapping.get("device_class", "opening")
         else:
             self._attr_device_class = mapping.get("device_class", "problem")
-            
+
         reg.async_add_listener(self._on_update)
 
     @property
@@ -53,8 +56,18 @@ class MapBinarySensor(BinarySensorEntity):
 
     @callback
     def _on_update(self, siid, payload):
-        if siid!=self._dev.siid: return
-        res=payload.get("resource", {})
+        if siid != self._dev.siid: 
+            return
+        
+        res=payload.get("resource", {}) or {}
+
+        self._attrs["siid"] = self._dev.siid
+        self_link = res.get("@self")
+        if isinstance(self_link, str):
+            self._attrs["sid"] = self_link.split("/")[-1]
+        else:
+            self._attrs["sid"] = self._dev.siid
+
         mapping=self._reg.map_input(self._dev.type)
         val=self._reg.state_of(self._dev, res, mapping)
         if val is not None:

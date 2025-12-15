@@ -24,7 +24,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class MapOutputSwitch(SwitchEntity):
     def __init__(self, coord: OIICoordinator, reg: MapRegistry, client, dev: DeviceEntry):
-        self._coord=coord; self._reg=reg; self._client=client; self._dev=dev
+        self._coord=coord; 
+        self._reg=reg; 
+        self._client=client; 
+        self._dev=dev
         self._is_on=None
         self._attrs={}
         self._mapping = reg.map_output(dev.type)
@@ -44,8 +47,17 @@ class MapOutputSwitch(SwitchEntity):
 
     @callback
     def _on_update(self, siid, payload):
-        if siid!=self._dev.siid: return
-        res=payload.get("resource", {})
+        if siid!=self._dev.siid: 
+            return
+        res=payload.get("resource", {}) or {}
+
+        self._attrs["siid"] = self._dev.siid
+        self_link = res.get("@self")
+        if isinstance(self_link, str):
+            self._attrs["sid"] = self_link.split("/")[-1]
+        else:
+            self._attrs["sid"] = self._dev.siid
+
         # availability
         self._attr_available = (res.get("opState") == "OK") and bool(res.get("enabled", True))
         val=self._reg.state_of(self._dev, res, self._mapping)

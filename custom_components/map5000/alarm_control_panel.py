@@ -38,9 +38,21 @@ class MapAlarmPanel(AlarmControlPanelEntity):
     def name(self):  return "MAP5000 Alarm Panel"
     @property
     def unique_id(self): return f"{DOMAIN}_alarm_{self._siid}"
+    @property
+    def extra_state_attributes(self): return getattr(self, "_attrs", {})
+
 
     @callback
     def _on_update(self, siid, payload):
+        
+        self._attrs = getattr(self, "_attrs", {})
+        self._attrs["siid"] = self._siid
+        self_link = res.get("@self")
+        if isinstance(self_link, str):
+            self._attrs["sid"] = self_link.split("/")[-1]
+        else:
+            self._attrs["sid"] = self._siid
+
         res=payload.get("resource", {})
         self_link=res.get("@self","")
         # incidents: /inc/<AreaSIID>/<id>
