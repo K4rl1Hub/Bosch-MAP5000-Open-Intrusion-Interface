@@ -18,7 +18,7 @@ class DeviceEntry:
 
 class MapRegistry:
     def __init__(self, hass: HomeAssistant, conf: Dict[str, Any]):
-        self.hass = hassendswith
+        self.hass = hass
         self.conf = conf
         self.devices: Dict[str, DeviceEntry] = {}
         self.listeners: List[Callable[[str, Dict[str, Any]], None]] = []
