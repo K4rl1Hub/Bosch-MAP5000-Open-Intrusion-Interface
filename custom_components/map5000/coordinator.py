@@ -22,7 +22,7 @@ class MapRegistry:
         self.conf = conf
         self.devices: Dict[str, DeviceEntry] = {}
         self.listeners: List[Callable[[str, Dict[str, Any]], None]] = []
-        self._last_resource: Dict[str, Dict[str, Any]] = {}
+        self._last_resource: Dict[str, Dict[str, Any]] = {} # Cache
 
     def _matches(self, val: str, patterns: List[str]) -> bool:
         for p in patterns or []:

@@ -28,6 +28,20 @@ class MapBinarySensor(BinarySensorEntity):
         self._attr_unique_id=f"{DOMAIN}_{dev.siid}"
         self._attr_name=dev.name or dev.siid
         self._device_info = DeviceInfo(identifiers={(DOMAIN, "map5000")}, manufacturer="Bosch", model="MAP5000", name="MAP5000")
+        
+        # Determine device class based on type and name
+        mapping = reg.map_input(dev.type)
+        if dev.type == "POINT.LSNEXPANDER" and (dev.name or "").strip():
+            nm = dev.name
+            if "Tür" in nm:
+                self._attr_device_class = "door"
+            elif "Fenster" in nm:
+                self._attr_device_class = "window" 
+            else:
+                self._attr_device_class = mapping.get("device_class", "opening")
+        else:
+            self._attr_device_class = mapping.get("device_class", "problem")
+            
         reg.async_add_listener(self._on_update)
 
     @property
