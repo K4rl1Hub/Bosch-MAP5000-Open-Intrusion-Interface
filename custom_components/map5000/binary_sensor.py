@@ -23,10 +23,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class MapBinarySensor(BinarySensorEntity):
     def __init__(self, coord: OIICoordinator, reg: MapRegistry, dev: DeviceEntry):
-        self._coord=coord; 
-        self._reg=reg; 
+        self._coord=coord 
+        self._reg=reg 
         self._dev=dev
-        self._is_on=None; 
+        self._is_on=None
         self._attrs={}
         self._attr_unique_id=f"{DOMAIN}_{dev.siid}"
         self._attr_name=dev.name or dev.siid
@@ -36,12 +36,12 @@ class MapBinarySensor(BinarySensorEntity):
         mapping = reg.map_input(dev.type)
         if dev.type == "POINT.LSNEXPANDER" and (dev.name or "").strip():
             nm = dev.name
-            if "Tür" in nm:
-                self._attr_device_class = "door"
+            if "RK" in nm:
+                self._attr_device_class = "lock"
+            elif "Tür" in nm:
+                self._attr_device_class = "window"
             elif "Fenster" in nm:
                 self._attr_device_class = "window"
-            elif "RK" in nm:
-                self._attr_device_class = "lock"
             else:
                 self._attr_device_class = mapping.get("device_class", "opening")
         else:

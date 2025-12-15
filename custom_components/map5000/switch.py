@@ -24,9 +24,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class MapOutputSwitch(SwitchEntity):
     def __init__(self, coord: OIICoordinator, reg: MapRegistry, client, dev: DeviceEntry):
-        self._coord=coord; 
-        self._reg=reg; 
-        self._client=client; 
+        self._coord=coord 
+        self._reg=reg 
+        self._client=client 
         self._dev=dev
         self._is_on=None
         self._attrs={}
