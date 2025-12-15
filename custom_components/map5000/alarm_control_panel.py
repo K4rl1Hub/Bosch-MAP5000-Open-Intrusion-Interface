@@ -8,11 +8,17 @@ async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     coord = data["coordinator"]
     client = data["client"]
+    reg = data["registry"]
 
-    area_siid = entry.data.get("area_siid")
+    area_siid = entry.data.get("area_siid") or await client.first_area_siid()
+    panel = MapAlarmPanel(coord, client, area_siid)
     if not area_siid:
         area_siid = await client.first_area_siid()
     async_add_entities([MapAlarmPanel(coord, client, area_siid)])
+
+    last_area = reg.get_last_resource(area_siid)
+    if last_area is not None:
+        panel._on_update(area_siid, {"resource": last_area})
 
 class MapAlarmPanel(AlarmControlPanelEntity):
     _attr_code_arm_required=False

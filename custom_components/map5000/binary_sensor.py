@@ -16,6 +16,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(MapBinarySensor(coord, reg, dev))
     async_add_entities(entities)
 
+    for ent in entities:
+        last = reg.get_last_resource(ent._dev.siid)
+        if last is not None:
+            ent._on_update(ent._dev.siid, {"resource": last})
+
 class MapBinarySensor(BinarySensorEntity):
     def __init__(self, coord: OIICoordinator, reg: MapRegistry, dev: DeviceEntry):
         self._coord=coord; self._reg=reg; self._dev=dev

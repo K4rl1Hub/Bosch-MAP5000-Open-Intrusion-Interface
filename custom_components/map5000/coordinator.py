@@ -22,6 +22,7 @@ class MapRegistry:
         self.conf = conf
         self.devices: Dict[str, DeviceEntry] = {}
         self.listeners: List[Callable[[str, Dict[str, Any]], None]] = []
+        self._last_resource: Dict[str, Dict[str, Any]] = {}
 
     def _matches(self, val: str, patterns: List[str]) -> bool:
         for p in patterns or []:
@@ -92,9 +93,17 @@ class MapRegistry:
         self.listeners.append(cb)
 
     def dispatch(self, siid: str, payload: Dict[str, Any]):
+        # Last know resource snapshot (cache) for initial state
+        res = payload.get("resource")
+        if isinstance(res, dict):
+            self._last_resource[siid] = res
         for cb in list(self.listeners):
             try: cb(siid, payload)
             except Exception: _LOGGER.exception("Listener error")
+
+    def get_last_resource(self, siid: str) -> Optional[Dict[str, Any]]:
+        """Return last know resource snapshot for entity (if available)."""
+        return self._last_resource.get(siid)
 
 class OIICoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, client: OIIClient, reg: MapRegistry, conf: Dict[str, Any]):
