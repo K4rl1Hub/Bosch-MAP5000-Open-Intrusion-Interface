@@ -215,7 +215,49 @@ class WebControlClient:
             "channels_valid": valid,
             "channels_mapped": mapped,
         }
+    
+    # ---------- Polling ----------
+    def poll(self, raumindex: int, kanalindex: int) -> Optional[Dict[str,int]]:
+        payload = [self.TEL_POLLING, raumindex, kanalindex, 0]
+        hex_msg, _ = self._build_message(payload)
+        xml = self._http_get(hex_msg)
+        root = ET.fromstring(xml)
+        rid_el = root.find("responseID")
+        if rid_el is None or int(rid_el.text) != self.RES_POLLING:
+            return None
+        def _int(tag):
+            el = root.find(tag)
+            return int(el.text) if el is not None and el.text is not None else None
+        st = {
+            "raumindex": _int("raumindex"),
+            "kanalindex": _int("kanalindex"),
+            "lastp": _int("lastp"),
+            "lastw": _int("lastw")
+        }
+        self.state_cache[(raumindex, kanalindex)] = st
+        return st
 
+    # ---------- Auslöser ----------
+    def read_ausloeser(self, raumindex: int, kanalindex: int, cli_index: int) -> Optional[Dict[str,int]]:
+        payload = [self.TEL_AUSLOESER, raumindex, kanalindex, cli_index]
+        hex_msg, _ = self._build_message(payload)
+        xml = self._http_get(hex_msg)
+        root = ET.fromstring(xml)
+        rid_el = root.find("responseID")
+        if rid_el is None or int(rid_el.text) != self.RES_AUSLOESER:
+            return None
+        def _int(tag):
+            el = root.find(tag)
+            return int(el.text) if el is not None and el.text is not None else None
+        data = {
+            "raumindex": _int("raumindex"),
+            "kanalindex": _int("kanalindex"),
+            "clikanidx": _int("clikanidx"),
+            "cliausl": _int("cliausl")
+        }
+        self.cause_cache[cli_index] = data
+        return data
+    
     # Bedienungen
     def _channel_command(self, raumindex: int, kanalindex: int, fc: int, pos: int, winkel: int) -> str:
         if winkel != self.INVALID_WINKEL and winkel < 0:

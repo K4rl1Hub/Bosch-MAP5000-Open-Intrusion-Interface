@@ -9,6 +9,7 @@ class WebControlCover(CoverEntity):
         CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE |
         CoverEntityFeature.STOP | CoverEntityFeature.SET_POSITION
     )
+    _attr_should_poll = True
 
     def __init__(self, client, ch):
         self._client = client
@@ -19,6 +20,7 @@ class WebControlCover(CoverEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "webcontrol")}, name="Warema WebControl"
         )
+        self._last_cause = None  # cliausl Code
 
     def open_cover(self, **kwargs):
         self._client.cover_open(self._ch.raumindex, self._ch.kanalindex)
@@ -32,12 +34,29 @@ class WebControlCover(CoverEntity):
     def set_cover_position(self, **kwargs):
         pos = kwargs.get("position")
         if pos is not None:
-            self._client.cover_set_position(self._ch.raumindex, self._ch.kanalindex, int(pos))
+            self._client.cover_set_position(self._ch, int(pos))
             self._position = int(pos)
+
+    def update(self):
+        st = self._client.poll(self._ch.raumindex, self._ch.kanalindex)
+        if st and st.get("lastp") is not None:
+            # lastp ist 0..200 → /2 für 0..100
+            self._position = int(st["lastp"] // 2)
+        # cause Cache
+        cause = self._client.cause_cache.get(self._ch.cli_index)
+        if cause:
+            self._last_cause = cause.get("cliausl")
 
     @property
     def current_cover_position(self):
         return self._position
+
+    @property
+    def extra_state_attributes(self):
+        attrs = {}
+        if self._last_cause is not None:
+            attrs["last_cause_code"] = self._last_cause
+        return attrs
 
 
 def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=None):
