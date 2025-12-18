@@ -271,23 +271,31 @@ class WebControlClient:
         hex_msg, _ = self._build_message(payload)
         return self._http_get(hex_msg)
 
-    def cover_set_position(self, raumindex: int, kanalindex: int, percent: int) -> str:
-        return self._channel_command(raumindex, kanalindex, self.FC_STATE, int(percent), self.INVALID_WINKEL)
+    def cover_set_position(self, ch: ChannelInfo, percent: int) -> str:
+        if ch.raumindex is not None and ch.kanalindex is not None:
+            self.read_ausloeser(ch.raumindex, ch.kanalindex, ch.cli_index)
+        return self._channel_command(ch.raumindex, ch.kanalindex, self.FC_STATE, int(percent), self.INVALID_WINKEL)
 
-    def cover_open(self, raumindex: int, kanalindex: int) -> str:
-        return self._channel_command(raumindex, kanalindex, self.FC_HOCH, 0, 0)
+    def cover_open(self, ch: ChannelInfo) -> str:
+        if ch.raumindex is not None and ch.kanalindex is not None:
+            self.read_ausloeser(ch.raumindex, ch.kanalindex, ch.cli_index)
+        return self._channel_command(ch.raumindex, ch.kanalindex, self.FC_HOCH, 0, 0)
 
-    def cover_close(self, raumindex: int, kanalindex: int) -> str:
-        return self._channel_command(raumindex, kanalindex, self.FC_TIEF, 0, 0)
+    def cover_close(self, ch: ChannelInfo) -> str:
+        if ch.raumindex is not None and ch.kanalindex is not None:
+            self.read_ausloeser(ch.raumindex, ch.kanalindex, ch.cli_index)
+        return self._channel_command(ch.raumindex, ch.kanalindex, self.FC_TIEF, 0, 0)
 
-    def cover_stop(self, raumindex: int, kanalindex: int) -> str:
-        return self._channel_command(raumindex, kanalindex, self.FC_STOP, 0, self.INVALID_WINKEL)
+    def cover_stop(self, ch: ChannelInfo) -> str:
+        if ch.raumindex is not None and ch.kanalindex is not None:
+            self.read_ausloeser(ch.raumindex, ch.kanalindex, ch.cli_index)
+        return self._channel_command(ch.raumindex, ch.kanalindex, self.FC_STOP, 0, self.INVALID_WINKEL)
 
-    def light_on(self, raumindex: int, kanalindex: int) -> str:
-        return self._channel_command(raumindex, kanalindex, self.FC_STATE, 100, self.INVALID_WINKEL)
+    def light_on(self, ch: ChannelInfo) -> str:
+        return self._channel_command(ch.raumindex, ch.kanalindex, self.FC_STATE, 100, self.INVALID_WINKEL)
 
-    def light_off(self, raumindex: int, kanalindex: int) -> str:
-        return self._channel_command(raumindex, kanalindex, self.FC_STOP, 0, self.INVALID_WINKEL)
+    def light_off(self, ch: ChannelInfo) -> str:
+        return self._channel_command(ch.raumindex, ch.kanalindex, self.FC_STOP, 0, self.INVALID_WINKEL)
 
     # Switches (global): Abwesend & Automatik
     def set_abwesend(self, enabled: bool) -> Optional[bool]:
