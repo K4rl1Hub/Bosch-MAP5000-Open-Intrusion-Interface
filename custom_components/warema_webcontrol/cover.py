@@ -59,7 +59,7 @@ class WebControlCover(CoordinatorEntity, CoverEntity):
     @property
     def is_closed(self):
         """Return if the cover is closed."""
-        if self    if self._position is None:
+        if self._position is None:
             return None
 
 
