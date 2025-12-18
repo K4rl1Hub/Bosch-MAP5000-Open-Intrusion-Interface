@@ -2,10 +2,15 @@ from __future__ import annotations
 from homeassistant.components.light import LightEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from . import DOMAIN
 
-class WebControlLight(LightEntity):
+class WebControlLight(CoordinatorEntity, LightEntity):
+    _attr_should_poll = False
+
     def __init__(self, client, ch):
+        super().__init__(coordinator)
         self._client = client
         self._ch = ch
         self._attr_name = ch.name or f"Licht {ch.cli_index}"
@@ -16,21 +21,29 @@ class WebControlLight(LightEntity):
         )
 
     def turn_on(self, **kwargs):
-        self._client.light_on(self._ch.raumindex, self._ch.kanalindex)
+        self._client.light_on(self._ch)
         self._is_on = True
 
     def turn_off(self, **kwargs):
-        self._client.light_off(self._ch.raumindex, self._ch.kanalindex)
+        self._client.light_off(self._ch)
         self._is_on = False
 
     @property
     def is_on(self):
+        data = self.coordinator.data or {}
+        key = (self._ch.raumindex, self._ch.kanalindex)
+        st = data.get(key)
+        if st and st.get("lastp") is not None:
+            self._is_on = (st["lastp"] >= 200)
         return self._is_on
 
 
-def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=None):
+
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     data = hass.data[DOMAIN]
     client = data["client"]
+    coordinator = data["coordinator"]
     lights = data["mapped"]["light"]
-    entities = [WebControlLight(client, ch) for ch in lights]
-    add_entities(entities, True)
+    entities = [WebControlLight(hass, client, coordinator, ch) for ch in lights]
+    async_add_entities(entities)
+

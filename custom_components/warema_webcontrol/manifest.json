@@ -2,8 +2,9 @@
   "domain": "webcontrol",
   "name": "Warema WebControl",
   "version": "0.2.0",
-  "documentation": "http://192.168.99.198",
+  "documentation": "https://example.local/docs/warema",
   "iot_class": "local_polling",
   "requirements": ["requests>=2.31.0"],
-  "codeowners": ["@mw-webcontrol"]
+  "codeowners": ["@michael-wentzler"],
+  "config_flow": true
 }

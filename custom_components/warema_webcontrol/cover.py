@@ -2,16 +2,19 @@ from __future__ import annotations
 from homeassistant.components.cover import CoverEntity, CoverEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from . import DOMAIN
 
-class WebControlCover(CoverEntity):
+class WebControlCover(CoordinatorEntity, CoverEntity):
     _attr_supported_features = (
         CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE |
         CoverEntityFeature.STOP | CoverEntityFeature.SET_POSITION
     )
-    _attr_should_poll = True
+    _attr_should_poll = False
 
     def __init__(self, client, ch):
+        super().__init__(coordinator)
         self._client = client
         self._ch = ch
         self._attr_name = ch.name or f"Rollladen {ch.cli_index}"
@@ -23,13 +26,13 @@ class WebControlCover(CoverEntity):
         self._last_cause = None  # cliausl Code
 
     def open_cover(self, **kwargs):
-        self._client.cover_open(self._ch.raumindex, self._ch.kanalindex)
+        self._client.cover_open(self._ch)
 
     def close_cover(self, **kwargs):
-        self._client.cover_close(self._ch.raumindex, self._ch.kanalindex)
+        self._client.cover_close(self._ch)
 
     def stop_cover(self, **kwargs):
-        self._client.cover_stop(self._ch.raumindex, self._ch.kanalindex)
+        self._client.cover_stop(self._ch)
 
     def set_cover_position(self, **kwargs):
         pos = kwargs.get("position")
@@ -37,18 +40,19 @@ class WebControlCover(CoverEntity):
             self._client.cover_set_position(self._ch, int(pos))
             self._position = int(pos)
 
-    def update(self):
-        st = self._client.poll(self._ch.raumindex, self._ch.kanalindex)
+    
+    @property
+    def current_cover_position(self):
+        # Aus coordinator.data lesen (State‑Cache: {(raum, kanal): {...}})
+        data = self.coordinator.data or {}
+        key = (self._ch.raumindex, self._ch.kanalindex)
+        st = data.get(key)
         if st and st.get("lastp") is not None:
-            # lastp ist 0..200 → /2 für 0..100
-            self._position = int(st["lastp"] // 2)
-        # cause Cache
+            self._position = int(st["lastp"] // 2)  # 0..200 -> 0..100
+        # Auslöser (optional, falls vorher gelesen)
         cause = self._client.cause_cache.get(self._ch.cli_index)
         if cause:
             self._last_cause = cause.get("cliausl")
-
-    @property
-    def current_cover_position(self):
         return self._position
 
     @property
@@ -59,9 +63,11 @@ class WebControlCover(CoverEntity):
         return attrs
 
 
-def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=None):
+
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     data = hass.data[DOMAIN]
     client = data["client"]
+    coordinator = data["coordinator"]
     covers = data["mapped"]["cover"]
-    entities = [WebControlCover(client, ch) for ch in covers]
-    add_entities(entities, True)
+    entities = [WebControlCover(hass, client, coordinator, ch) for ch in covers]
+    async_add_entities(entities)

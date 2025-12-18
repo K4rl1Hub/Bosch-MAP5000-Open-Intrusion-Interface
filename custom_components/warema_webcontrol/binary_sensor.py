@@ -19,6 +19,7 @@ class WebControlBinarySensorSommerWinter(BinarySensorEntity):
         return bool(self._client.sommer_winter_aktiv == 1)
 
 
-def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=None):
+
+async def async_setup_entry(hass, entry, async_add_entities):
     client = hass.data[DOMAIN]["client"]
-    add_entities([WebControlBinarySensorSommerWinter(client)], True)
+    async_add_entities([WebControlBinarySensorSommerWinter(client)], True)

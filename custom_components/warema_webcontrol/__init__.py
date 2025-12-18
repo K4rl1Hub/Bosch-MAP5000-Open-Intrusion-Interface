@@ -1,28 +1,67 @@
 from __future__ import annotations
 import logging
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import ConfigType
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import discovery
-from .webcontrol_client import WebControlClient
 
-DOMAIN = "webcontrol"
+from .webcontrol_client import WebControlClient
+from .const import DOMAIN, CONF_BASE_URL
+
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["cover", "light", "switch", "binary_sensor", "sensor"]
 
 
-def setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    conf = config.get(DOMAIN, {})
-    base_url = conf.get("base_url", "http://192.168.99.198")
 
-    client = WebControlClient(base_url=base_url, timeout=5)
-    _LOGGER.info("WebControl Init: Sprache/Kanäle/SommerWinter/ClimaCheck")
-    init = client.initialize(max_elements=144)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Setup per UI Flow erstellt."""
+    base_url = entry.data[CONF_BASE_URL]
+    scan_seconds = entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+
+    client = WebControlClient(base_url=base_url, timeout=5
+
+
+    # Initialisierung im Threadpool (blockiert sonst)
+    init = await hass.async_add_executor_job(client.initialize, 144)
+
+    mapped = init["channels_mapped"]
+    covers: list[ChannelInfo] = mapped.get("cover", [])
+    lights: list[ChannelInfo] = mapped.get("light", [])
+
+    async def _async_update():
+        try:
+            # Polling im Threadpool (alle relevanten Channels)
+            def _do_poll():
+                for ch in covers + lights:
+                    if ch.raumindex is not None and ch.kanalindex is not None:
+                        client.poll(ch.raumindex, ch.kanalindex)
+                return client.state_cache
+            return await hass.async_add_executor_job(_do_poll)
+        except Exception as exc:
+            raise UpdateFailed(str(exc)) from exc
+
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="webcontrol_coordinator",
+        update_method=_async_update,
+        update_interval=timedelta(seconds=int(scan_seconds)),
+    )
+
+    # Erste Aktualisierung
+    await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN]["client"] = client
-    hass.data[DOMAIN]["mapped"] = init["channels_mapped"]
+    hass.data[DOMAIN]["mapped"] = mapped
+    hass.data[DOMAIN]["coordinator"] = coordinator
 
-    for platform in PLATFORMS:
-        discovery.load_platform(hass, platform, DOMAIN, {}, config)
-
+    # Plattformen laden
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data.pop(DOMAIN, None)
+    return unload_ok

@@ -50,7 +50,7 @@ class WebControlSwitchAutomatik(SwitchEntity):
         self.schedule_update_ha_state()
 
 
-def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=None):
-    data = hass.data[DOMAIN]
-    client = data["client"]
-    add_entities([WebControlSwitchAbwesend(client), WebControlSwitchAutomatik(client)], True)
+
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
+    client = hass.data[DOMAIN]["client"]
+    async_add_entities([WebControlSwitchAbwesend(client), WebControlSwitchAutomatik(client)], True)

@@ -1,0 +1,5 @@
+
+DOMAIN = "webcontrol"
+CONF_BASE_URL = "base_url"
+DEFAULT_BASE_URL = "http://192.168.99.198"
+DEFAULT_SCAN_INTERVAL = 30 # seconds
