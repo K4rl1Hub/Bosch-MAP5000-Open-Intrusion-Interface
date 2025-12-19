@@ -113,7 +113,7 @@ class WebControlClient:
         """
         with self._lock:
             for attempt in range(max_retries):
-                hex_msg, cnt = self._build_frame(payload)
+                hex_msg, cnt = self._build_message(payload)
                 xml_text = self._http_get(hex_msg)
                 root = ET.fromstring(xml_text)
                 # Busy behandeln: responseID==RES_BUSY → kurz warten und erneut
