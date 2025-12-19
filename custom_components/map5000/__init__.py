@@ -17,6 +17,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     coordinator = OIICoordinator(hass, client, registry, conf)
     await coordinator.async_setup()
 
+    # Start polling loop, moved from coordinator.py
+    hass.loop.create_task(coordinator._loop())  # pylint: disable=protected-access
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"client": client, "registry": registry, "coordinator": coordinator, "conf": conf}
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

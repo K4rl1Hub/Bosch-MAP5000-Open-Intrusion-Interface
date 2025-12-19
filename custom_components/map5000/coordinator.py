@@ -121,12 +121,14 @@ class OIICoordinator(DataUpdateCoordinator):
             try:
                 res = await self.client.get(f"/{siid}")
                 self.reg.dispatch(siid, {"resource": res})
-            except Exception: pass
+            except Exception:
+                pass
 
         subs = [{"eventType":["CHANGED","CREATED","DELETED"], "urls":["/devices","/points","/areas","/inc/*"]}]
         await self.client.create_subscription(subs, self.conf.get(CONF_SUB_BUFFER, DEFAULT_BUFFER),
                                              self.conf.get(CONF_SUB_LEASE, DEFAULT_LEASE))
-        self._poll_task = self.hass.async_create_task(self._loop())
+        # Don't start polling loop yet - moved to __init__.py
+        # self._poll_task = self.hass.async_create_task(self._loop())
 
     async def _loop(self):
         lease = self.conf.get(CONF_SUB_LEASE, DEFAULT_LEASE)
