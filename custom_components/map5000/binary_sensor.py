@@ -70,10 +70,19 @@ class MapBinarySensor(BinarySensorEntity):
         else:
             self._attrs["sid"] = self._dev.siid
 
-        mapping=self._reg.map_input(self._dev.type)
-        val=self._reg.state_of(self._dev, res, mapping)
+        mapping = self._reg.map_input(self._dev.type)
+        val = self._reg.state_of(self._dev, res, mapping)
         if val is not None:
             self._is_on = bool(val)
+
+            self._attrs["bypassable"] = getattr(self._dev, "bypassable", None)
+            self._attrs["partOfWalktest"] = getattr(self._dev, "partOfWalktest", None)
+
+            if "bypassed" in res:
+                self._attrs["bypassed"] = res["bypassed"]
+
             for k in ("armed","fault","name"):
-                if k in res: self._attrs[k]=res[k]
+                if k in res: 
+                    self._attrs[k]=res[k]
+
             self.async_write_ha_state()

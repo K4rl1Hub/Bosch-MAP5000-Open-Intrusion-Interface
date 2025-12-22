@@ -15,6 +15,8 @@ class DeviceEntry:
     type: str
     name: Optional[str]
     raw: Dict[str, Any]
+    bypassable: Optional[bool] = None
+    partOfWalktest: Optional[bool] = None
 
 class MapRegistry:
     def __init__(self, hass: HomeAssistant, conf: Dict[str, Any]):
@@ -45,12 +47,24 @@ class MapRegistry:
     def add_from_config(self, device_cfg: List[Dict[str, Any]]):
         cnt = 0
         for d in device_cfg:
-            if not isinstance(d, dict): continue
-            siid = d.get("siid"); dtype = d.get("type"); name = d.get("name")
-            if not siid or not dtype: continue
+            if not isinstance(d, dict): 
+                continue
+            
+            siid = d.get("siid")
+            dtype = d.get("type")
+            name = d.get("name")
+
+            if not siid or not dtype:
+                continue
+            
             e = DeviceEntry(siid=siid, type=dtype, name=name, raw=d)
+            e.bypassable = d.get("bypassable")
+            e.partOfWalktest = d.get("partOfWalktest")
+            
             if self.should_publish(e):
-                self.devices[siid] = e; cnt += 1
+                self.devices[siid] = e
+                cnt += 1
+            
         _LOGGER.info("Geräte registriert: %s", cnt)
 
     def map_input(self, dtype: str) -> Dict[str, Any]:
