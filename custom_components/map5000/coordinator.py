@@ -38,10 +38,17 @@ class MapRegistry:
         exc_t = self.conf.get(CONF_EXCLUDE_TYPES) or []
         inc_s = set(self.conf.get(CONF_INCLUDE_SIIDS) or [])
         exc_s = set(self.conf.get(CONF_EXCLUDE_SIIDS) or [])
-        if entry.siid in exc_s: return False
-        if self._matches(entry.type, exc_t): return False
-        if inc_s and entry.siid not in inc_s: return False
-        if inc_t and not self._matches(entry.type, inc_t): return False
+
+        if entry.siid in exc_s: 
+            return False
+        if self._matches(entry.type, exc_t): 
+            return False
+
+        if inc_s and entry.siid not in inc_s: 
+            return False
+        if inc_t and not self._matches(entry.type, inc_t): 
+            return False
+        
         return True
 
     def add_from_config(self, device_cfg: List[Dict[str, Any]]):
@@ -138,7 +145,8 @@ class OIICoordinator(DataUpdateCoordinator):
             except Exception:
                 pass
 
-        subs = [{"eventType":["CHANGED","CREATED","DELETED"], "urls":["/devices","/points","/areas","/inc/*"]}]
+        subs = [{"eventType": ["CHANGED","CREATED","DELETED"], 
+                 "urls": ["/devices","/points","/areas","/inc/*"]}]
         await self.client.create_subscription(subs, self.conf.get(CONF_SUB_BUFFER, DEFAULT_BUFFER),
                                              self.conf.get(CONF_SUB_LEASE, DEFAULT_LEASE))
         # Don't start polling loop yet - moved to __init__.py
