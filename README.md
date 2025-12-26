@@ -1,9 +1,9 @@
 
-# Home Assistant — Bosch MAP500 Integration
+# Home Assistant — Bosch MAP5000 Integration
 
-A comprehensive guide to install, configure, and operate the **Bosch MAP500** integration in Home Assistant. This README covers prerequisites, installation methods (HACS and manual), configuration options, entity model, automations, troubleshooting, and contribution guidelines.
+A comprehensive guide to install, configure, and operate the **Bosch MAP5000** integration in Home Assistant. This README covers prerequisites, installation methods (HACS and manual), configuration options, entity model, automations, troubleshooting, and contribution guidelines.
 
-> ⚠️ **Note**: The MAP500 ecosystem can vary by region and firmware. This integration targets the Bosch **MAP500 gateway** used to expose devices (e.g., HVAC/boiler/thermostat sensors/actuators) to Home Assistant. Adapt entity names and endpoints to your deployment.
+> ⚠️ **Note**: The MAP5000 ecosystem can vary by region and firmware. This integration targets the Bosch **MAP5000 gateway** used to expose devices (e.g., HVAC/boiler/thermostat sensors/actuators) to Home Assistant. Adapt entity names and endpoints to your deployment.
 
 ---
 
@@ -33,7 +33,7 @@ A comprehensive guide to install, configure, and operate the **Bosch MAP500** in
 
 ## Overview
 
-**Bosch MAP500 Integration** bridges your Bosch **MAP500 gateway** into Home Assistant (HA), exposing sensors, binary sensors, and controls for compatible devices (e.g., boilers/HVAC zones, temperature setpoints, operating modes, fault codes).
+**Bosch MAP5000 Integration** bridges your Bosch **MAP5000 gateway** into Home Assistant (HA), exposing sensors, binary sensors, and controls for compatible devices (e.g., boilers/HVAC zones, temperature setpoints, operating modes, fault codes).
 
 **Goals:**
 - Reliable local polling/subscribe to MAP500 endpoints
@@ -53,9 +53,9 @@ A comprehensive guide to install, configure, and operate the **Bosch MAP500** in
 
 ## Prerequisites
 - **Home Assistant** 2023.12+ (recommended)
-- **Bosch MAP500 Gateway** on the same network
-- Network access from HA to MAP500 (TCP/HTTP/HTTPS depending on your implementation)
-- Credentials or token if MAP500 requires authentication
+- **Bosch MAP5000 Gateway** on the same network
+- Network access from HA to MAP5000 (TCP/HTTP/HTTPS depending on your implementation)
+- Credentials or token if MAP5000 requires authentication
 - Python 3.11+ inside HA environment (for custom integrations)
 
 ## Installation
@@ -63,12 +63,12 @@ A comprehensive guide to install, configure, and operate the **Bosch MAP500** in
 ### Option A: HACS
 1. Open **HACS** → **Integrations** → **⋮** → **Custom repositories**
 2. Add your repository URL: `https://github.com/<your-org>/<your-repo>` with category **Integration**
-3. Search for **Bosch MAP500** in HACS and **Install**
+3. Search for **Bosch MAP5000** in HACS and **Install**
 4. **Restart** Home Assistant
 
 ### Option B: Manual
-1. Copy the `custom_components/bosch_map500/` folder into your HA config directory
-   - Path: `<config>/custom_components/bosch_map500/`
+1. Copy the `custom_components/bosch_map5000/` folder into your HA config directory
+   - Path: `<config>/custom_components/bosch_map5000/`
 2. Ensure `manifest.json`, `__init__.py`, `config_flow.py` (if using UI), and platform files `sensor.py`, `binary_sensor.py`, `climate.py` (as applicable) are present
 3. **Restart** Home Assistant
 
@@ -79,7 +79,7 @@ There are two recommended configuration flows.
 
 #### UI (Config Flow)
 - Go to **Settings → Devices & Services → Add Integration**
-- Search for **Bosch MAP500**
+- Search for **Bosch MAP5000**
 - Enter **Host**, **Port**, and **Credentials/Token**
 - Optional: **Poll interval**, **Timeout**, **SSL verify**
 
@@ -87,7 +87,7 @@ There are two recommended configuration flows.
 Add to `configuration.yaml`:
 
 ```yaml
-bosch_map500:
+bosch_map5000:
   host: 192.168.1.50
   port: 443
   ssl: true
@@ -99,7 +99,7 @@ bosch_map500:
   device_whitelist:
     - zone_living
     - zone_bedroom
-  entity_prefix: "MAP500"
+  entity_prefix: "MAP5000"
   enable_fault_entities: true
   debug: false
 ```
@@ -117,23 +117,23 @@ bosch_map500:
 > Adjust to reflect your code. This section helps users understand the mapping.
 
 ### Sensors
-- `sensor.map500_outdoor_temperature`
-- `sensor.map500_supply_temperature`
-- `sensor.map500_return_temperature`
-- `sensor.map500_pressure`
-- `sensor.map500_energy_consumption_daily`
+- `sensor.map5000_outdoor_temperature`
+- `sensor.map5000_supply_temperature`
+- `sensor.map5000_return_temperature`
+- `sensor.map5000_pressure`
+- `sensor.map5000_energy_consumption_daily`
 
 ### Binary Sensors
-- `binary_sensor.map500_burner_active`
-- `binary_sensor.map500_fault`
-- `binary_sensor.map500_gateway_online`
+- `binary_sensor.map5000_burner_active`
+- `binary_sensor.map5000_fault`
+- `binary_sensor.map5000_gateway_online`
 
 ### Climate (if supported)
-- `climate.map500_zone_<name>` — supports `hvac_modes: [heat, auto, off]` and `target_temperature`
+- `climate.map5000_zone_<name>` — supports `hvac_modes: [heat, auto, off]` and `target_temperature`
 
 ### Diagnostics
-- `sensor.map500_firmware_version`
-- `sensor.map500_last_update`
+- `sensor.map5000_firmware_version`
+- `sensor.map5000_last_update`
 
 ## Usage Examples
 
@@ -142,7 +142,7 @@ Add a `thermostat` card for a climate entity:
 
 ```yaml
 type: thermostat
-entity: climate.map500_zone_living
+entity: climate.map5000_zone_living
 name: Living Room
 ```
 
@@ -150,20 +150,20 @@ Display multiple sensors in an entities card:
 
 ```yaml
 type: entities
-title: MAP500 Overview
+title: MAP5000 Overview
 entities:
-  - sensor.map500_outdoor_temperature
-  - sensor.map500_supply_temperature
-  - sensor.map500_return_temperature
-  - sensor.map500_pressure
-  - binary_sensor.map500_fault
+  - sensor.map5000_outdoor_temperature
+  - sensor.map5000_supply_temperature
+  - sensor.map5000_return_temperature
+  - sensor.map5000_pressure
+  - binary_sensor.map5000_fault
 ```
 
 ### Automations
 Turn off heating when a window is open:
 
 ```yaml
-alias: MAP500 — Pause heating when window open
+alias: MAP5000 — Pause heating when window open
 trigger:
   - platform: state
     entity_id: binary_sensor.living_window
@@ -181,7 +181,7 @@ mode: single
 Raise an alert on faults:
 
 ```yaml
-alias: MAP500 — Fault alert
+alias: MAP5000 — Fault alert
 trigger:
   - platform: state
     entity_id: binary_sensor.map500_fault
@@ -189,13 +189,13 @@ trigger:
 action:
   - service: notify.mobile_app_michael_phone
     data:
-      title: "Bosch MAP500 Fault"
+      title: "Bosch MAP5000 Fault"
       message: "A fault has been reported by the gateway. Check diagnostics."
 mode: single
 ```
 
 ## Troubleshooting
-- **Integration not discovered**: Verify files are under `custom_components/bosch_map500/` and restart HA.
+- **Integration not discovered**: Verify files are under `custom_components/bosch_map5000/` and restart HA.
 - **Cannot connect**: Check network reachability (`ping`), correct `host`/`port`, and whether MAP500 requires HTTPS.
 - **Auth errors**: Confirm credentials or token; try `verify_ssl: false` temporarily if using self-signed.
 - **Missing entities**: Enable debug, check logs, and review device whitelist/blacklist.
@@ -212,12 +212,12 @@ logger:
 ```
 
 ## Known Limitations
-- MAP500 API/version differences across regions/firmware
+- MAP5000 API/version differences across regions/firmware
 - Limited write operations depending on device capabilities
 - No cloud control; local network only (unless you implement cloud fallback)
 
 ## Security Considerations
-- Prefer local-only access; avoid exposing MAP500 to WAN
+- Prefer local-only access; avoid exposing MAP5000 to WAN
 - Use strong credentials; rotate tokens
 - If enabling remote access, require TLS and proper certificates
 
