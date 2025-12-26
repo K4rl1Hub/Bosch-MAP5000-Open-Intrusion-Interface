@@ -1,267 +1,233 @@
+# Bosch MAP5000 – Home Assistant Integration
 
-# Home Assistant — Bosch MAP5000 Integration
+## Native Open Intrusion Interface (OII) Integration – No MQTT Required
 
-A comprehensive guide to install, configure, and operate the **Bosch MAP5000** integration in Home Assistant. This README covers prerequisites, installation methods (HACS and manual), configuration options, entity model, automations, troubleshooting, and contribution guidelines.
+This Home Assistant integration connects the **Bosch MAP5000** intrusion detection system natively via the **Open Intrusion Interface (OII)**. No MQTT bridge, no external proxy services, and no additional middleware are required.
 
-> ⚠️ **Note**: The MAP5000 ecosystem can vary by region and firmware. This integration targets the Bosch **MAP5000 gateway** used to expose devices (e.g., HVAC/boiler/thermostat sensors/actuators) to Home Assistant. Adapt entity names and endpoints to your deployment.
-
----
-
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-  - [Option A: HACS](#option-a-hacs)
-  - [Option B: Manual](#option-b-manual)
-- [Configuration](#configuration)
-  - [Basic Setup](#basic-setup)
-  - [Advanced Options](#advanced-options)
-- [Entity Model](#entity-model)
-- [Usage Examples](#usage-examples)
-  - [Dashboards](#dashboards)
-  - [Automations](#automations)
-- [Troubleshooting](#troubleshooting)
-- [Known Limitations](#known-limitations)
-- [Security Considerations](#security-considerations)
-- [Development](#development)
-- [Contributing](#contributing)
-- [Versioning & Changelog](#versioning--changelog)
-- [License](#license)
+The integration provides real-time synchronization of sensors, outputs, keypads, and alarm status — including detailed **user login/logout/arming/disarming events** from MAP5000 keypads.
 
 ---
 
-## Overview
+# 🚀 Features
 
-**Bosch MAP5000 Integration** bridges your Bosch **MAP5000 gateway** into Home Assistant (HA), exposing sensors, binary sensors, and controls for compatible devices (e.g., boilers/HVAC zones, temperature setpoints, operating modes, fault codes).
+## ✔ Native OII Communication
+The integration uses only official MAP5000 OII endpoints:
+- `/config`
+- `/devices`
+- `/points`
+- `/areas`
+- `/inc/*`
+- `/sub` (Subscriptions)
+- `FETCHEVENTS`
+- OII Commands: `ARM`, `DISARM`, `ON`, `OFF`
 
-**Goals:**
-- Reliable local polling/subscribe to MAP500 endpoints
-- Clean entity model aligned with Home Assistant best practices
-- Minimal configuration with sensible defaults
+Advantages:
+- No MQTT or third-party services
+- Secure HTTP Digest authentication
+- Real-time updates
+- Full transparency and reliability
 
-## Features
-- ✅ Auto-discovery of devices attached to the MAP500 gateway
-- ✅ Sensor entities (e.g., temperatures, pressures, energy, states)
-- ✅ Binary sensors (e.g., faults, connectivity, burner state)
-- ✅ Controls (e.g., set heating mode, setpoint)
-- ✅ Device Info, unique IDs, area assignment
-- ✅ Configurable polling interval & timeout
-- ✅ Optional debug logging
+---
 
-> Add/remove bullets to reflect actual capabilities in your build.
+# 📡 Entities Provided
 
-## Prerequisites
-- **Home Assistant** 2023.12+ (recommended)
-- **Bosch MAP5000 Gateway** on the same network
-- Network access from HA to MAP5000 (TCP/HTTP/HTTPS depending on your implementation)
-- Credentials or token if MAP5000 requires authentication
-- Python 3.11+ inside HA environment (for custom integrations)
+## 🔵 Binary Sensors
+The integration automatically detects the following MAP5000 device types:
 
-## Installation
+| MAP5000 Type | HA Device Class | Description |
+|--------------|------------------|-------------|
+| `POINT.LSNEXPANDER` | door / window / opening | Contacts (doors, windows, magnetic switches) |
+| `POINT.PIR` | motion | Motion detectors |
+| `POINT.TAMPER` | tamper | Tamper switches |
+| `POWERSUPPLY` | power | Power supply state |
+| `BATTERY` | battery | Battery condition |
+| `BATTERYCHARGER` | battery_charging | Charger state |
 
-### Option A: HACS
-1. Open **HACS** → **Integrations** → **⋮** → **Custom repositories**
-2. Add your repository URL: `https://github.com/<your-org>/<your-repo>` with category **Integration**
-3. Search for **Bosch MAP5000** in HACS and **Install**
-4. **Restart** Home Assistant
+### Dynamic Door/Window Classification
+For `POINT.LSNEXPANDER`, the entity name is analyzed:
+- contains **"Tür"** → `door`
+- contains **"Fenster"** → `window`
+- otherwise → `opening`
 
-### Option B: Manual
-1. Copy the `custom_components/bosch_map5000/` folder into your HA config directory
-   - Path: `<config>/custom_components/bosch_map5000/`
-2. Ensure `manifest.json`, `__init__.py`, `config_flow.py` (if using UI), and platform files `sensor.py`, `binary_sensor.py`, `climate.py` (as applicable) are present
-3. **Restart** Home Assistant
+### Extended Attributes
+Binary sensors expose additional MAP5000-specific fields:
+- `bypassable` *(from /config)*
+- `partOfWalktest` *(from /config)*
+- `bypassed` *(from /devices)*
+- `siid`
+- `sid`
 
-## Configuration
+---
 
-### Basic Setup
-There are two recommended configuration flows.
+## 🟢 Switches (Outputs)
+All `OUTPUT.*` devices are mapped to switch entities:
 
-#### UI (Config Flow)
-- Go to **Settings → Devices & Services → Add Integration**
-- Search for **Bosch MAP5000**
-- Enter **Host**, **Port**, and **Credentials/Token**
-- Optional: **Poll interval**, **Timeout**, **SSL verify**
+- State from `on: true|false`
+- Availability from `opState` + `enabled`
+- Switching via:
+  ```json
+  {"@cmd": "ON"}
+  ```
+  and
+  ```json
+  {"@cmd": "OFF"}
+  ```
 
-#### YAML (if you prefer static config)
-Add to `configuration.yaml`:
+Examples:
+- Siren
+- Strobe light
+- LEDs
+- Relay outputs
+- Keypad internal beeper
 
-```yaml
-bosch_map5000:
-  host: 192.168.1.50
-  port: 443
-  ssl: true
-  verify_ssl: true
-  username: !secret bosch_map500_user
-  password: !secret bosch_map500_pass
-  poll_interval: 30  # seconds
-  request_timeout: 10 # seconds
-  device_whitelist:
-    - zone_living
-    - zone_bedroom
-  entity_prefix: "MAP5000"
-  enable_fault_entities: true
-  debug: false
+---
+
+## 🟣 Keypads as ENUM Sensors
+Every MAP5000 keypad appears as a **sensor with well-defined ENUM states**.
+
+### Supported States
+```
+idle
+login
+logout
+arm
+disarm
+keypress
+other
 ```
 
-> Remove or rename keys to match your integration implementation.
+### Attributes
+Keypad sensors expose:
+- `userId`
+- `userName`
+- `function` (raw OII field)
+- `result`
+- `time`
+- `siid`
+- `sid`
 
-### Advanced Options
-- **Device Filtering**: `device_whitelist` or `device_blacklist`
-- **Entity Naming**: `entity_prefix` for consistent naming
-- **SSL**: toggle `ssl`/`verify_ssl` for self-signed certs
-- **Logging**: set `debug: true`, then check `home-assistant.log`
+### Logbook Integration
+Each keypad event generates a Home Assistant logbook entry:
+```
+Max Mustermann → login (SUCCESS) at 2025-01-12T21:35:31
+```
+This enables:
+- Tracking user actions
+- Detecting who armed/disarmed the alarm
+- Logging keypad access events
 
-## Entity Model
+---
 
-> Adjust to reflect your code. This section helps users understand the mapping.
+## 🔴 Alarm Control Panel
+The integration exposes the MAP5000 area as a native `alarm_control_panel`.
 
-### Sensors
-- `sensor.map5000_outdoor_temperature`
-- `sensor.map5000_supply_temperature`
-- `sensor.map5000_return_temperature`
-- `sensor.map5000_pressure`
-- `sensor.map5000_energy_consumption_daily`
+### Supported Actions
+- `arm_home`
+- `arm_away` (maps to OII ARM)
+- `disarm`
 
-### Binary Sensors
-- `binary_sensor.map5000_burner_active`
-- `binary_sensor.map5000_fault`
-- `binary_sensor.map5000_gateway_online`
+### States
+- `armed_home`
+- `armed_away`
+- `disarmed`
+- `triggered`
 
-### Climate (if supported)
-- `climate.map5000_zone_<name>` — supports `hvac_modes: [heat, auto, off]` and `target_temperature`
+Alarm triggers are reported via `/inc/*` events.
 
-### Diagnostics
-- `sensor.map5000_firmware_version`
-- `sensor.map5000_last_update`
+---
 
-## Usage Examples
+# ⚙ Installation
 
-### Dashboards
-Add a `thermostat` card for a climate entity:
+1. Copy the directory:
+   ```
+   custom_components/map5000/
+   ```
+   into your Home Assistant configuration folder:
+   ```
+   /config/custom_components/map5000/
+   ```
 
-```yaml
-type: thermostat
-entity: climate.map5000_zone_living
-name: Living Room
+2. Restart Home Assistant.
+
+3. Add the integration via:
+   **Settings → Devices & Services → Add Integration → “Bosch MAP5000”**
+
+---
+
+# 🔧 Configuration
+All configuration is performed in the Home Assistant UI.
+
+## `include_types`
+Comma-separated list, e.g.:
+```
+POINT.LSNEXPANDER,POINT.PIR,POINT.TAMPER,OUTPUT.,KEYPAD
 ```
 
-Display multiple sensors in an entities card:
-
-```yaml
-type: entities
-title: MAP5000 Overview
-entities:
-  - sensor.map5000_outdoor_temperature
-  - sensor.map5000_supply_temperature
-  - sensor.map5000_return_temperature
-  - sensor.map5000_pressure
-  - binary_sensor.map5000_fault
+## `exclude_types`
+Comma-separated list:
+```
+SYSTEM.,SUPERV.
 ```
 
-### Automations
-Turn off heating when a window is open:
+## `type_mapping`
+JSON object allowing overrides for device_class and state logic.
 
+## `output_mapping`
+JSON object for customizing OII output commands, e.g.:
+```json
+{
+  "OUTPUT.SIREN": {
+    "state_property": "on",
+    "turn_on": {"@cmd": "ON"},
+    "turn_off": {"@cmd": "OFF"}
+  }
+}
+```
+
+---
+
+# 🧪 Example Automations
+
+### Notify on Keypad Login
 ```yaml
-alias: MAP5000 — Pause heating when window open
 trigger:
   - platform: state
-    entity_id: binary_sensor.living_window
-    to: 'on'
-condition: []
+    entity_id: sensor.keypad_eg
+    to: "login"
 action:
-  - service: climate.set_hvac_mode
-    target:
-      entity_id: climate.map500_zone_living
+  - service: notify.mobile_app
     data:
-      hvac_mode: 'off'
-mode: single
+      message: "{{ state_attr('sensor.keypad_eg','userName') }} logged in at the keypad."
 ```
 
-Raise an alert on faults:
-
+### Log Arming Event
 ```yaml
-alias: MAP5000 — Fault alert
 trigger:
   - platform: state
-    entity_id: binary_sensor.map500_fault
-    to: 'on'
+    entity_id: sensor.keypad_eg
+    to: "arm"
 action:
-  - service: notify.mobile_app_michael_phone
+  - service: logbook.log
     data:
-      title: "Bosch MAP5000 Fault"
-      message: "A fault has been reported by the gateway. Check diagnostics."
-mode: single
+      name: "MAP5000"
+      message: "System armed by {{ state_attr('sensor.keypad_eg','userName') }}."
 ```
-
-## Troubleshooting
-- **Integration not discovered**: Verify files are under `custom_components/bosch_map5000/` and restart HA.
-- **Cannot connect**: Check network reachability (`ping`), correct `host`/`port`, and whether MAP500 requires HTTPS.
-- **Auth errors**: Confirm credentials or token; try `verify_ssl: false` temporarily if using self-signed.
-- **Missing entities**: Enable debug, check logs, and review device whitelist/blacklist.
-- **Slow updates**: Increase `poll_interval`; ensure gateway isn’t rate-limiting.
-- **Fault entity always on**: Inspect raw API payloads; map to proper state logic.
-
-Enable debug logging:
-
-```yaml
-logger:
-  default: warning
-  logs:
-    custom_components.bosch_map500: debug
-```
-
-## Known Limitations
-- MAP5000 API/version differences across regions/firmware
-- Limited write operations depending on device capabilities
-- No cloud control; local network only (unless you implement cloud fallback)
-
-## Security Considerations
-- Prefer local-only access; avoid exposing MAP5000 to WAN
-- Use strong credentials; rotate tokens
-- If enabling remote access, require TLS and proper certificates
-
-## Development
-
-### Project Structure (example)
-```
-custom_components/bosch_map500/
-├── __init__.py
-├── manifest.json
-├── config_flow.py
-├── api.py
-├── sensor.py
-├── binary_sensor.py
-├── climate.py
-├── diagnostics.py
-└── translations/
-```
-
-### Local Dev
-- Use **Developer Tools → Reload** for quick iteration
-- Run HA in a dev container; mount `custom_components`
-- Write unit tests for entity state mapping and error handling
-
-### Coding Guidelines
-- Follow HA platform/entity conventions
-- Use `DataUpdateCoordinator` for polling
-- Provide `device_info` and stable `unique_id`
-
-## Contributing
-Pull requests are welcome! Please:
-- Open an issue describing the change/bug
-- Include test coverage where feasible
-- Keep docs and examples updated
-
-## Versioning & Changelog
-This project uses **Semantic Versioning**. Track changes in `CHANGELOG.md`.
-
-## License
-MIT (or your preferred license). Include `LICENSE` in the repo.
 
 ---
 
-### Support
-- Create an issue on GitHub: `https://github.com/<your-org>/<your-repo>/issues`
-- Share logs and configuration (redact secrets)
+# 🔍 Architecture & Internals
+- Fully async (httpx)
+- Digest authentication
+- Subscription loop separate from setup (no HA bootstrap blocking)
+- Initial state snapshot using coordinator cache
+- Platforms:
+  - `binary_sensor`
+  - `switch`
+  - `sensor`
+  - `alarm_control_panel`
 
+---
+
+# ❤️ Support & Contributions
+Issues and Pull Requests are welcome.
+This project evolves with community feedback.
