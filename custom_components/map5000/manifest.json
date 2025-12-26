@@ -2,10 +2,10 @@
 {
   "domain": "map5000",
   "name": "Bosch MAP5000 Open Intrusion Interface",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "documentation": "https://example.local/docs/map5000",
   "requirements": ["httpx>=0.27.0"],
-  "codeowners": ["@michael-wentzler"],
+  "codeowners": ["@K4rl1Hub"],
   "iot_class": "local_push",
   "config_flow": true
 }

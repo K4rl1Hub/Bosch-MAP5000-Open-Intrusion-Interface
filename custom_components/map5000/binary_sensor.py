@@ -12,7 +12,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entities=[]
     for siid, dev in reg.devices.items():
-        if dev.type.startswith("POINT."):
+        if dev.type.upper().startswith("POINT.") and not dev.type.upper().startswith("KEYPAD"):
             entities.append(MapBinarySensor(coord, reg, dev))
     async_add_entities(entities)
 
