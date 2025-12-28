@@ -32,6 +32,12 @@ def _normalize_function(func: Optional[str]) -> str:
     # Unbekannt → "other"
     return "other"
 
+def _get(res: dict, *keys):
+    for k in keys:
+        if k in res:
+            return res[k]
+    return None
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -107,48 +113,56 @@ class MapKeypadSensor(SensorEntity):
             case _:
                 return "mdi:security"
 
-    # ---- Event Callback aus Coordinator ----
+    # ---- Event Callback from Coordinator ----
     @callback
     def _on_update(self, siid: str, payload: dict):
         if siid != self._dev.siid:
             return
 
         res = payload.get("resource") or {}
-        # etype kann nützlich sein ("CREATED"/"CHANGED"/"DELETED")
+        # etype might be useful ("CREATED"/"CHANGED"/"DELETED")
         etype = payload.get("etype")
 
-        # Basis-IDs
+        # base ids
         self._attrs["siid"] = self._dev.siid
         self_link = res.get("@self", "")
         self._attrs["sid"] = self_link.split("/")[-1] if isinstance(self_link, str) and self_link.startswith("/") else self._dev.siid
 
-        # Daten des Keypad-Events
-        user_id   = res.get("userId")
-        user_name = res.get("userName")
-        function  = res.get("function")     # LOGIN / LOGOUT / ARM / DISARM / KEYPRESS / ...
-        result    = res.get("result")       # SUCCESS/FAIL/...
-        timeval   = res.get("time")
+        # Keypad event data
+        user_id   = _get(res, "userID", "userId", "UserID", "UserId")
+        activated = _get(res, "activated", "Activated")     # true or false
+        #user_name = res.get("userName")    # not provided by OII API; derive from userId if needed
+        #result    = res.get("result")      # not provided by OII API
+        #timeval   = res.get("time")        # not provided by OII API
 
         # Attribute setzen (nur wenn vorhanden)
-        if user_id   is not None: self._attrs["userId"]   = user_id
-        if user_name is not None: self._attrs["userName"] = user_name
-        if function  is not None: self._attrs["function"] = function
-        if result    is not None: self._attrs["result"]   = result
-        if timeval   is not None: self._attrs["time"]     = timeval
+        if user_id   is not None: self._attrs["userId"]   = str(user_id)
+        if activated is not None: self._attrs["activated"] = bool(activated)
+        #if user_name is not None: self._attrs["userName"] = user_name
+        #if function  is not None: self._attrs["function"] = function
+        #if result    is not None: self._attrs["result"]   = result
+        #if timeval   is not None: self._attrs["time"]     = timeval
 
-        # Zustand normalisieren (ENUM)
-        new_state = _normalize_function(function)
-        if new_state not in _STATE_OPTIONS:
-            new_state = "other"
+        # determine new state from activated / user_id data
+        if activated is True and user_id not in (None, "", "0"):
+            new_state = "login"
+        elif activated is False and self._state == "login" and self._prev_uid not in (None, "", "0"):
+            new_state = "logout"
+        else:
+            new_state = "idle"
+
         self._state = new_state
+        if user_id is not None:
+            self._prev_uid = str(user_id)
+
 
         self.async_write_ha_state()
 
         # Logbuch-Eintrag (Duplikate vermeiden)
-        sig = (self._state, user_id, result, timeval)
-        if self._state != "idle" and sig != self._last_logged_signature:
-            self._last_logged_signature = sig
-            self._log_to_logbook(self._state, user_id, user_name, result, timeval)
+        #sig = (self._state, user_id, result, timeval)
+        #if self._state != "idle" and sig != self._last_logged_signature:
+        #    self._last_logged_signature = sig
+        #    self._log_to_logbook(self._state, user_id, user_name, result, timeval)
 
         # Fire HA Event (disabled for now; not yet needed)
         # self.hass.bus.fire(
