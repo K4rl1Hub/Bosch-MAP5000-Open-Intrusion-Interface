@@ -24,7 +24,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class MapAlarmPanel(AlarmControlPanelEntity):
     _attr_code_arm_required=False
     _attr_code_format=None
-    _attr_supported_features = ( AlarmControlPanelEntityFeature.ARM_AWAY | AlarmControlPanelEntityFeature.DISARM )
+    _attr_supported_features = ( AlarmControlPanelEntityFeature.ARM_AWAY )
 
     def __init__(self, coord, client, area_siid: str):
         self._coord=coord; self._client=client; self._siid=area_siid
