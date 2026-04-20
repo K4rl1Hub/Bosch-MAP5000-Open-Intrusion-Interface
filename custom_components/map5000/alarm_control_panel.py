@@ -1,5 +1,6 @@
 
 from homeassistant.components.alarm_control_panel import AlarmControlPanelEntity
+from homeassistant.components.alarm_control_panel.const import AlarmControlPanelEntityFeature
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from .const import DOMAIN
@@ -23,6 +24,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class MapAlarmPanel(AlarmControlPanelEntity):
     _attr_code_arm_required=False
     _attr_code_format=None
+    _attr_supported_features = ( AlarmControlPanelEntityFeature.ARM_AWAY | AlarmControlPanelEntityFeature.DISARM )
 
     def __init__(self, coord, client, area_siid: str):
         self._coord=coord; self._client=client; self._siid=area_siid
@@ -55,6 +57,12 @@ class MapAlarmPanel(AlarmControlPanelEntity):
         else:
             self._attrs["sid"] = self._siid
 
+        self._attrs["oiiArmable"] = res.get("oiiArmable", False)
+        self._attrs["readyToArm"] = res.get("readyToArm", False)
+        self._attrs["readyToDisarm"] = res.get("readyToDisarm", False)
+        self._attrs["numberOfBypassedDevices"] = res.get("numberOfBypassedDevicess", None)
+            
+
         res=payload.get("resource", {})
         self_link=res.get("@self","")
         # incidents: /inc/<AreaSIID>/<id>
@@ -71,14 +79,15 @@ class MapAlarmPanel(AlarmControlPanelEntity):
         if siid==self._siid or (isinstance(self_link,str) and self_link.endswith(self._siid)):
             armed = res.get("armed")
             if armed is True: 
-                self._state="armed_home"
+                self._state="armed_away"
             elif armed is False: 
                 self._state="disarmed"
             self.async_write_ha_state()
 
     async def async_alarm_disarm(self, code=None):
-        await self._client.post(f"/{self._siid}", {"@cmd":"DISARM"})
-    async def async_alarm_arm_home(self, code=None):
-        await self._client.post(f"/{self._siid}", {"@cmd":"ARM"})
+        if self._attrs.get("oiiArmable", False):
+            await self._client.post(f"/{self._siid}", {"@cmd":"DISARM"})
+
     async def async_alarm_arm_away(self, code=None):
-        await self._client.post(f"/{self._siid}", {"@cmd":"ARM"})
+        if self._attrs.get("oiiArmable", False):
+            await self._client.post(f"/{self._siid}", {"@cmd":"ARM"})

@@ -1,0 +1,42 @@
+{
+  "OUTPUT.SIREN": {
+    "platform": "switch",
+    "state_property": "on",
+    "true_values": [true],
+    "false_values": [false],
+    "turn_on": { "@cmd": "ON" },
+    "turn_off": { "@cmd": "OFF" }
+  },
+  "OUTPUT.STROBE": {
+    "platform": "switch",
+    "state_property": "on",
+    "true_values": [true],
+    "false_values": [false],
+    "turn_on": { "@cmd": "ON" },
+    "turn_off": { "@cmd": "OFF" }
+  },
+  "OUTPUT.LED": {
+    "platform": "switch",
+    "state_property": "on",
+    "true_values": [true],
+    "false_values": [false],
+    "turn_on": { "@cmd": "ON" },
+    "turn_off": { "@cmd": "OFF" }
+  },
+  "OUTPUT.KPSPEAKER": {
+    "platform": "switch",
+    "state_property": "on",
+    "true_values": [true],
+    "false_values": [false],
+    "turn_on": { "@cmd": "ON" },
+    "turn_off": { "@cmd": "OFF" }
+  },
+  "OUTPUT.CONTROL": {
+    "platform": "switch",
+    "state_property": "on",
+    "true_values": [true],
+    "false_values": [false],
+    "turn_on": { "@cmd": "ON" },
+    "turn_off": { "@cmd": "OFF" }
+  }
+}

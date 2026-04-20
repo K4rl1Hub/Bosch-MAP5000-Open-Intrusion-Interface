@@ -1,0 +1,50 @@
+{
+  "POINT.PIR": {
+    "device_class": "motion",
+    "state_property": "active",
+    "true_values": [true, "ALARM", "ON", 1],
+    "false_values": [false, "IDLE", "OFF", 0],
+    "bypass_turn_on": { "@cmd": "BYPASS" },
+    "bypass_turn_off": { "@cmd": "UNBYPASS" }
+  },
+  "POINT.TAMPER": {
+    "device_class": "tamper",
+    "state_property": "alarm",
+    "true_values": [true, "ALARM", "TAMPER", "OPEN"],
+    "false_values": [false, "NORMAL", "CLOSED"]
+  },
+  "POWERSUPPLY": {
+    "device_class": "power",
+    "state_property": "state",
+    "true_values": ["ON", true],
+    "false_values": ["OFF", false]
+  },
+  "BATTERY": {
+    "device_class": "battery",
+    "state_property": "state",
+    "true_values": ["LOW", true],
+    "false_values": ["OK", false]
+  },
+  "BATTERYCHARGER": {
+    "device_class": "battery_charging",
+    "state_property": "state",
+    "true_values": ["CHARGING", true],
+    "false_values": ["IDLE", false]
+  },
+  "POINT.LSNEXPANDER": {
+    "device_class": "opening",
+    "state_property": "active",
+    "true_values": [true, "OPEN", "ON", 1],
+    "false_values": [false, "CLOSED", "OFF", 0],
+    "bypass_turn_on": { "@cmd": "BYPASS" },
+    "bypass_turn_off": { "@cmd": "UNBYPASS" }
+  },
+  "default": {
+    "device_class": "opening",
+    "state_property": "open",
+    "true_values": [true, "OPEN", "ON", 1],
+    "false_values": [false, "CLOSED", "OFF", 0],
+    "bypass_turn_on": { "@cmd": "BYPASS" },
+    "bypass_turn_off": { "@cmd": "UNBYPASS" }
+  }
+}
