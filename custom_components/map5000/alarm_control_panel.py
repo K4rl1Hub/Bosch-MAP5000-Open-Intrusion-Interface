@@ -57,11 +57,10 @@ class MapAlarmPanel(AlarmControlPanelEntity):
         else:
             self._attrs["sid"] = self._siid
 
-        self._attrs["oiiArmable"] = res.get("oiiArmable", False)
-        self._attrs["readyToArm"] = res.get("readyToArm", False)
-        self._attrs["readyToDisarm"] = res.get("readyToDisarm", False)
-        self._attrs["numberOfBypassedDevices"] = res.get("numberOfBypassedDevicess", None)
-            
+        self._attrs["oiiArmable"] = getattr(self, "oiiArmable", False)
+        self._attrs["readyToArm"] = getattr(self, "readyToArm", False)
+        self._attrs["readyToDisarm"] = getattr(self, "readyToDisarm", False)
+        self._attrs["numberOfBypassedDevices"] = getattr(self, "numberOfBypassedDevices", None)
 
         res=payload.get("resource", {})
         self_link=res.get("@self","")
