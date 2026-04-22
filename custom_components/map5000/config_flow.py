@@ -10,6 +10,7 @@ from .const import *
 
 DEFAULT_INCLUDE_TYPES_CSV = "POINT.LSNEXPANDER,POINT.PIR,POINT.TAMPER,KEYPAD,OUTPUT."
 DEFAULT_EXCLUDE_TYPES_CSV = "SYSTEM.,SUPERV.,OII"
+DEFAULT_ARM_DELAY = "ZERO"
 
 DEFAULT_INPUT_MAPPING_JSON = json.dumps({
   "POINT.PIR": {"device_class": "motion", "state_property": "active", "true_values": [True, "ALARM", "ON", 1], "false_values": [False, "IDLE", "OFF", 0]},
@@ -17,7 +18,7 @@ DEFAULT_INPUT_MAPPING_JSON = json.dumps({
   "POWERSUPPLY": {"device_class": "power", "state_property": "state", "true_values": ["ON", True], "false_values": ["OFF", False]},
   "BATTERY": {"device_class": "battery", "state_property": "state", "true_values": ["LOW", True], "false_values": ["OK", False]},
   "BATTERYCHARGER": {"device_class": "battery_charging", "state_property": "state", "true_values": ["CHARGING", True], "false_values": ["IDLE", False]},
-  "POINT.LSNEXPANDER": {"device_class": "opening", "state_property": "open", "true_values": [True, "OPEN", "ON", 1], "false_values": [False, "CLOSED", "OFF", 0]},
+  "POINT.LSNEXPANDER": {"device_class": "opening", "state_property": "active", "true_values": [True, "OPEN", "ON", 1], "false_values": [False, "CLOSED", "OFF", 0]},
   "default": {"device_class": "opening", "state_property": "open", "true_values": [True, "OPEN", "ON", 1], "false_values": [False, "CLOSED", "OFF", 0]},
 }, ensure_ascii=False)
 
@@ -25,7 +26,8 @@ DEFAULT_OUTPUT_MAPPING_JSON = json.dumps({
   "OUTPUT.SIREN":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
   "OUTPUT.STROBE":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
   "OUTPUT.LED":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
-  "OUTPUT.KPSPEAKER":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}}
+  "OUTPUT.KPSPEAKER":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}},
+  "OUTPUT.CONTROL":{"platform":"switch","state_property":"on","true_values":[True],"false_values":[False],"turn_on":{"@cmd":"ON"},"turn_off":{"@cmd":"OFF"}}
 }, ensure_ascii=False)
 
 
@@ -84,6 +86,7 @@ class Map5000OptionsFlowHandler(config_entries.OptionsFlow):
         tm_json = json.dumps(opts.get(CONF_TYPE_MAPPING, _json_to_dict(DEFAULT_INPUT_MAPPING_JSON)), ensure_ascii=False)
         om_json = json.dumps(opts.get(CONF_OUTPUT_MAPPING, _json_to_dict(DEFAULT_OUTPUT_MAPPING_JSON)), ensure_ascii=False)
 
+        arm_delay = opts.get(CONF_ARM_DELAY, DEFAULT_ARM_DELAY)
 
         if user_input is not None:
             include_types = _csv_to_list(user_input.get(CONF_INCLUDE_TYPES, ""))
@@ -98,6 +101,7 @@ class Map5000OptionsFlowHandler(config_entries.OptionsFlow):
             new_opts[CONF_EXCLUDE_TYPES] = exclude_types
             new_opts[CONF_TYPE_MAPPING] = type_mapping
             new_opts[CONF_OUTPUT_MAPPING] = output_mapping
+            new_opts[CONF_ARM_DELAY] = arm_delay
             return self.async_create_entry(title="MAP5000 Options", data=new_opts)
             
         schema = vol.Schema({
@@ -105,5 +109,6 @@ class Map5000OptionsFlowHandler(config_entries.OptionsFlow):
           vol.Optional(CONF_EXCLUDE_TYPES, default=exc_csv): str,
           vol.Optional(CONF_TYPE_MAPPING,   default=tm_json): str,
           vol.Optional(CONF_OUTPUT_MAPPING, default=om_json): str,
+          vol.Optional(CONF_ARM_DELAY, default=arm_delay): str,
         })
         return self.async_show_form(step_id="init", data_schema=schema)

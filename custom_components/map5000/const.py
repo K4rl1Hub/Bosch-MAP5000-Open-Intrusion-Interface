@@ -15,6 +15,8 @@ CONF_EXCLUDE_SIIDS = "exclude_siids"
 CONF_TYPE_MAPPING   = "type_mapping"    # inputs
 CONF_OUTPUT_MAPPING = "output_mapping"  # outputs
 
+CONF_ARM_DELAY = "arm_delay (ZERO, USERDEFAULT, EXTENDED)"
+
 # Subscription tunables
 CONF_SUB_BUFFER = "sub_buffer"
 CONF_SUB_LEASE  = "sub_lease"
