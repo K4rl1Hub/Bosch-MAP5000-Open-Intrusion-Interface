@@ -17,9 +17,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
         area_siid = await client.first_area_siid()
     async_add_entities([MapAlarmPanel(coord, client, area_siid)])
 
+
     last_area = reg.get_last_resource(area_siid)
     if last_area is not None:
-        panel._on_update(area_siid, {"resource": last_area})
+        resource = await client.load_panel_config(area_siid)
+        if resource is None:
+            resource = {"resource": last_area}
+        panel._on_update(area_siid, resource)
 
 class MapAlarmPanel(AlarmControlPanelEntity):
     _attr_code_arm_required=False
@@ -57,12 +61,15 @@ class MapAlarmPanel(AlarmControlPanelEntity):
         else:
             self._attrs["sid"] = self._siid
 
-        self._attrs["oiiArmable"] = getattr(self, "oiiArmable", False)
-        self._attrs["readyToArm"] = getattr(self, "readyToArm", False)
-        self._attrs["readyToDisarm"] = getattr(self, "readyToDisarm", False)
-        self._attrs["numberOfBypassedDevices"] = getattr(self, "numberOfBypassedDevices", None)
+        if "oiiArmable" in res:
+            self._attrs["oiiArmable"] = res.get("oiiArmable")
+        if "readyToArm" in res:
+            self._attrs["readyToArm"] = res.get("readyToArm")
+        if "readyToDisarm" in res:
+            self._attrs["readyToDisarm"] = res.get("readyToDisarm")
+        if "numberOfBypassedDevices" in res:
+            self._attrs["numberOfBypassedDevices"] = res.get("numberOfBypassedDevices")
 
-        res=payload.get("resource", {})
         self_link=res.get("@self","")
         # incidents: /inc/<AreaSIID>/<id>
         if isinstance(self_link,str) and self_link.startswith("/inc/"):
@@ -84,9 +91,22 @@ class MapAlarmPanel(AlarmControlPanelEntity):
             self.async_write_ha_state()
 
     async def async_alarm_disarm(self, code=None):
-        if self._attrs.get("oiiArmable", False):
-            await self._client.post(f"/{self._siid}", {"@cmd":"DISARM"})
+        if self._attrs.get("oiiArmable", True) and self._attrs.get("readyToDisarm", True):
+            payload = {"@cmd": "DISARM"}
+            await self._client.post(f"/{self._siid}", json=payload)
 
     async def async_alarm_arm_away(self, code=None):
-        if self._attrs.get("oiiArmable", False):
-            await self._client.post(f"/{self._siid}", {"@cmd":"ARM"})
+        self._state="arming"
+        self.async_write_ha_state()
+        if self._attrs.get("oiiArmable", True) and self._attrs.get("readyToArm", True):
+            bypassOffNormalDevices = self._entry.options.get(
+                                        CONF_BYPASS_OFF_NORMAL_DEVICES,
+                                        DEFAULT_BYPASS_OFF_NORMAL_DEVICES,
+                                    )
+
+            payload = {
+                "@cmd":"ARM", 
+                "bypassOffNormalDevices": bypassOffNormalDevices, 
+                "exitDelay": "ZERO"
+            }
+            await self._client.post(f"/{self._siid}", json=payload)

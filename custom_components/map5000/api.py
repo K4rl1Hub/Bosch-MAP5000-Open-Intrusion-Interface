@@ -45,6 +45,12 @@ class OIIClient:
             if isinstance(v, dict) and isinstance(v.get("deviceConfiguration"), list):
                 return v["deviceConfiguration"]
         return []
+    
+    async def load_panel_config(self, siid: str) -> List[Dict[str, Any]]:
+        cfg = await self.get(f"/{siid}")
+        if isinstance(cfg, dict):
+            return [cfg]
+        return []
 
     async def first_area_siid(self) -> Optional[str]:
         cfg = await self.get("/config")

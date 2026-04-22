@@ -28,4 +28,9 @@ DEFAULT_FETCH_MAXEVENTS = 50
 DEFAULT_FETCH_MINEVENTS = 1
 DEFAULT_FETCH_MAXTIME   = 60
 
+
+CONF_BYPASS_OFF_NORMAL_DEVICES = "bypass_off_normal_devices"
+DEFAULT_BYPASS_OFF_NORMAL_DEVICES = False
+
+
 PLATFORMS = ["binary_sensor", "switch", "alarm_control_panel", "sensor"]
