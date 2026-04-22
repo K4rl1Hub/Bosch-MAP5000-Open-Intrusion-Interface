@@ -1,7 +1,7 @@
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from .const import (
     DOMAIN,
     CONF_BYPASS_OFF_NORMAL_DEVICES,
@@ -30,14 +30,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if last is not None:
             ent._on_update(ent._dev.siid, {"resource": last})
 
-    panel = runtime.panel 
+    #panel = runtime.panel 
     async_add_entities([
-        MapBypassOffNormalDevicesSwitch(hass, entry, panel)
+        #MapBypassOffNormalDevicesSwitch(hass, entry, panel)
+        MapBypassOffNormalDevicesSwitch(hass, entry)
     ])
 
 
 class MapOutputSwitch(SwitchEntity):
-    
+
     def __init__(self, coord: OIICoordinator, reg: MapRegistry, client, dev: DeviceEntry):
         self._coord=coord 
         self._reg=reg 
@@ -113,7 +114,12 @@ class MapBypassOffNormalDevicesSwitch(SwitchEntity):
         self.hass = hass
         self._entry = entry
         #self._panel = panel
-
+        self._attrs={}
+        self._attr_available=True
+        self._is_on=self._entry.options.get(
+            CONF_BYPASS_OFF_NORMAL_DEVICES,
+            DEFAULT_BYPASS_OFF_NORMAL_DEVICES,
+        )
         # Name wird in Kombination mit Device-Name dargestellt (has_entity_name)
         self._attr_name = "Bypass off-normal devices"
 
@@ -131,6 +137,12 @@ class MapBypassOffNormalDevicesSwitch(SwitchEntity):
         ) """
         self._device_info = DeviceInfo(identifiers={(DOMAIN, "map5000")}, manufacturer="Bosch", model="MAP5000", name="MAP5000")
 
+    
+
+    @property
+    def device_info(self): return self._device_info
+    @property
+    def extra_state_attributes(self): return self._attrs
     @property
     def is_on(self) -> bool:
         """Return current option state."""
@@ -203,7 +215,7 @@ class MapSensorBypassSwitch(SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs):
-        body = self._mapping.get("turn_on", {"@cmd":"BYPASS"})
+        body = {"@cmd":"BYPASS"}
         await self._client.post(f"/{self._dev.siid}", body)
         try:
             res = await self._client.get(f"/{self._dev.siid}")
@@ -212,7 +224,7 @@ class MapSensorBypassSwitch(SwitchEntity):
             pass
 
     async def async_turn_off(self, **kwargs):
-        body = self._mapping.get("turn_off", {"@cmd":"UNBYPASS"})
+        body = {"@cmd":"UNBYPASS"}
         await self._client.post(f"/{self._dev.siid}", body)
         try:
             res = await self._client.get(f"/{self._dev.siid}")

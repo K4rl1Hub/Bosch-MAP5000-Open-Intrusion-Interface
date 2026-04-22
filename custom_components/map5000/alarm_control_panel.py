@@ -3,7 +3,7 @@ from homeassistant.components.alarm_control_panel import AlarmControlPanelEntity
 from homeassistant.components.alarm_control_panel.const import AlarmControlPanelEntityFeature
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN
+from .const import (DOMAIN, CONF_ARM_DELAY, CONF_BYPASS_OFF_NORMAL_DEVICES, DEFAULT_BYPASS_OFF_NORMAL_DEVICES)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -12,10 +12,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     reg = data["registry"]
 
     area_siid = entry.data.get("area_siid") or await client.first_area_siid()
-    panel = MapAlarmPanel(coord, client, area_siid)
+    panel = MapAlarmPanel(coord, entry, client, area_siid)
     if not area_siid:
         area_siid = await client.first_area_siid()
-    async_add_entities([MapAlarmPanel(coord, client, area_siid)])
+    async_add_entities(panel)
 
 
     last_area = reg.get_last_resource(area_siid)
@@ -30,9 +30,10 @@ class MapAlarmPanel(AlarmControlPanelEntity):
     _attr_code_format=None
     _attr_supported_features = ( AlarmControlPanelEntityFeature.ARM_AWAY )
 
-    def __init__(self, coord, client, area_siid: str):
+    def __init__(self, coord, entry, client, area_siid: str):
         self._coord=coord; self._client=client; self._siid=area_siid
         self._state="disarmed"
+        self._entry=entry
         self._device_info = DeviceInfo(identifiers={(DOMAIN, "map5000")}, manufacturer="Bosch", model="MAP5000", name="MAP5000")
         coord.reg.async_add_listener(self._on_update)
 
@@ -103,10 +104,11 @@ class MapAlarmPanel(AlarmControlPanelEntity):
                                         CONF_BYPASS_OFF_NORMAL_DEVICES,
                                         DEFAULT_BYPASS_OFF_NORMAL_DEVICES,
                                     )
+            arm_delay = self._entry.options.get(CONF_ARM_DELAY, "ZERO")
 
             payload = {
                 "@cmd":"ARM", 
                 "bypassOffNormalDevices": bypassOffNormalDevices, 
-                "exitDelay": "ZERO"
+                "exitDelay": arm_delay
             }
             await self._client.post(f"/{self._siid}", json=payload)
