@@ -12,10 +12,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     reg = data["registry"]
 
     area_siid = entry.data.get("area_siid") or await client.first_area_siid()
-    panel = MapAlarmPanel(coord, entry, client, area_siid)
     if not area_siid:
         area_siid = await client.first_area_siid()
-    async_add_entities(panel)
+    panel = MapAlarmPanel(coord, entry, client, area_siid)
+    async_add_entities([panel])
 
 
     last_area = reg.get_last_resource(area_siid)
@@ -92,14 +92,14 @@ class MapAlarmPanel(AlarmControlPanelEntity):
             self.async_write_ha_state()
 
     async def async_alarm_disarm(self, code=None):
-        if self._attrs.get("oiiArmable", True) and self._attrs.get("readyToDisarm", True):
-            payload = {"@cmd": "DISARM"}
-            await self._client.post(f"/{self._siid}", json=payload)
+        payload = {"@cmd": "DISARM"}
+        await self._client.post(f"/{self._siid}", json=payload)
 
     async def async_alarm_arm_away(self, code=None):
         self._state="arming"
         self.async_write_ha_state()
-        if self._attrs.get("oiiArmable", True) and self._attrs.get("readyToArm", True):
+
+        try:
             bypassOffNormalDevices = self._entry.options.get(
                                         CONF_BYPASS_OFF_NORMAL_DEVICES,
                                         DEFAULT_BYPASS_OFF_NORMAL_DEVICES,
@@ -112,3 +112,7 @@ class MapAlarmPanel(AlarmControlPanelEntity):
                 "exitDelay": arm_delay
             }
             await self._client.post(f"/{self._siid}", json=payload)
+        except Exception as e:
+            self._state="disarmed"
+            self.async_write_ha_state()
+            raise e
