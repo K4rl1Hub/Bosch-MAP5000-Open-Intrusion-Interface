@@ -121,11 +121,11 @@ class MapBypassOffNormalDevicesSwitch(SwitchEntity):
             DEFAULT_BYPASS_OFF_NORMAL_DEVICES,
         )
         # Name wird in Kombination mit Device-Name dargestellt (has_entity_name)
-        self._attr_name = "Bypass off-normal devices"
+        self._attr_name = "Arm Bypass off-normal devices"
 
         # Stabiler unique_id
         #panel_id = getattr(panel, "panel_id", entry.unique_id or entry.entry_id)
-        self._attr_unique_id = f"bypass_off_normal_devices"
+        self._attr_unique_id = f"arm_bypass_off_normal_devices"
 
         # Device-Zuordnung: dieses Switch-Entity soll am Panel-Device hängen
         """ self._attr_device_info = DeviceInfo(
@@ -180,7 +180,7 @@ class MapSensorBypassSwitch(SwitchEntity):
         self._is_on=None
         self._attrs={}
         self._attr_unique_id=f"{DOMAIN}_{dev.siid}_bypass"
-        self._attr_name=dev.name or dev.siid
+        self._attr_name=f"Bypass {dev.name}"
         self._attr_available=True
         self._device_info = DeviceInfo(identifiers={(DOMAIN, "map5000")}, manufacturer="Bosch", model="MAP5000", name="MAP5000")
 

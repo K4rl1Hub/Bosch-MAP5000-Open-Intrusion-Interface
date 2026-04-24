@@ -18,12 +18,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([panel])
 
 
-    last_area = reg.get_last_resource(area_siid)
-    if last_area is not None:
-        resource = await client.load_panel_config(area_siid)
-        if resource is None:
-            resource = {"resource": last_area}
-        panel._on_update(area_siid, resource)
+    #last_area = reg.get_last_resource(area_siid)
+    #if last_area is not None:
+    resource = await client.load_panel_config(area_siid)
+    if resource is None:
+        resource = {"resource": area_siid}
+    panel._on_update(area_siid, resource)
 
 class MapAlarmPanel(AlarmControlPanelEntity):
     _attr_code_arm_required=False
@@ -51,7 +51,10 @@ class MapAlarmPanel(AlarmControlPanelEntity):
 
     @callback
     def _on_update(self, siid, payload):
-        res = payload.get("resource") or {}
+        res = payload or {}
+        if "resource" in payload:
+            res = payload.get("resource")
+            
         self_link = res.get("@self", "")
 
         self._attrs = getattr(self, "_attrs", {})
