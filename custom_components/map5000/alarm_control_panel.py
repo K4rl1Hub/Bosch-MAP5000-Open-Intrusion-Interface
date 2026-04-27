@@ -96,7 +96,7 @@ class MapAlarmPanel(AlarmControlPanelEntity):
 
     async def async_alarm_disarm(self, code=None):
         payload = {"@cmd": "DISARM"}
-        await self._client.post(f"/{self._siid}", json=payload)
+        await self._client.post(f"/{self._siid}", payload)
 
     async def async_alarm_arm_away(self, code=None):
         self._state="arming"
@@ -114,7 +114,7 @@ class MapAlarmPanel(AlarmControlPanelEntity):
                 "bypassOffNormalDevices": bypassOffNormalDevices, 
                 "exitDelay": arm_delay
             }
-            await self._client.post(f"/{self._siid}", json=payload)
+            await self._client.post(f"/{self._siid}", payload)
         except Exception as e:
             self._state="disarmed"
             self.async_write_ha_state()
